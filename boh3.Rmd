@@ -1,0 +1,144 @@
+---
+title: "task3"
+author: "Mattia Storero"
+date: "24/10/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+rm(list = ls())
+```
+
+```{r, include=FALSE}
+library(tidyverse)
+library(gapminder)
+library(readr)
+library(data.table)
+library(plyr)
+library(kableExtra)
+```
+## Background
+The data were taken from "https://www.cdc.gov/nchs/data_access/vitalstatsonline.htm". The dataframes were downloaded, setted and selected thanks to the two guides.
+
+```{r, include=FALSE}
+#set the databases and selecting rows and columns looking at the guides
+setwd("C:\\Users\\store\\Downloads\\Nat2018us")
+
+data2018 <-
+  read_fwf("Nat2018PublicUS.c20190509.r20190717.txt",
+           fwf_empty("Nat2018PublicUS.c20190509.r20190717.txt")
+           )
+data2018 <-
+  read_fwf("Nat2018PublicUS.c20190509.r20190717.txt",
+           fwf_positions(start = c(475,504,13),
+                         end = c(475,507,14),
+                         col_names = c("sex","weight", "month")
+                         )
+           )
+
+setwd("C:\\Users\\store\\Downloads\\Nat2017us")
+
+data2017 <-
+  read_fwf("Nat2017PublicUS.c20180516.r20180808.txt",
+           fwf_positions(start = c(475,504,13),
+                         end = c(475,507,14),
+                         col_names = c("sex","weight", "month")
+                         )
+           )
+
+
+```
+
+## Working with the data
+The data were cleaned fixing the variables and adding the column year for each database. After that, the two databases were merged together vertically in order to work with them.
+
+```{r, include=FALSE}
+#cleaning and fix the variables + adding the column year for each database
+
+data2017$weight <- as.numeric(data2017$weight)
+data2017$month <- as.numeric(data2017$month)
+data2017$weight[data2017$weight == 9999] <- NA
+data2017$sex <- as.factor(data2017$sex)
+data2017$year <- 2017
+
+
+data2018$weight <- as.numeric(data2018$weight)
+data2018$month <- as.numeric(data2018$month)
+data2018$weight[data2018$weight == 9999] <- NA
+data2018$sex <- as.factor(data2018$sex)
+data2018$year <- 2018
+
+
+```
+
+
+```{r, include=FALSE}
+#merging vertically the two dataframes
+total_data <- rbind(data2017, data2018)
+
+```
+
+## Analysis and answering to questions
+
+1-The first point was to find out the proportion of boys and girls. For this reason, we worked with the variable "sex".
+```{r, echo=FALSE, warning=FALSE}
+#finding the proportions compared to the total and divide them
+mean(data2017$sex == "M")
+mean(data2017$sex == "F")
+mean(data2017$sex == "M") / mean(data2017$sex == "F")
+
+mean(data2018$sex == "M")
+mean(data2018$sex == "F")
+mean(data2018$sex == "M") / mean(data2018$sex == "F")
+
+```
+
+It's easy to see that the two values of boys/girls has changed, but not in a relevant way. In fact, it decreases from 1.047996 to 1.045748. To sum up, the number of girls has increased.
+
+2-The second point was to find out the avarage weight in grams and to see if there were differences between boys and girls in 2018 thanks to a density plot.
+```{r, include=FALSE}
+#total average
+average <- mean(total_data$weight, na.rm = TRUE)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#density plot
+
+ggplot(data2018, aes(x=weight, color=sex, fill=sex)) + 
+ geom_histogram(aes(y=..density..), alpha=0.5, 
+                position="identity")+
+ geom_density(alpha=.2)+labs(title="Weight density curve",x="Weight(grams)", y = "Density")
+
+
+
+
+```
+
+3-The third point was to find out if the average birth weight vary by month and year.
+
+```{r, include=FALSE}
+mean(data2017$weight, na.rm = TRUE)
+mean(data2018$weight, na.rm = TRUE)
+weight_rel <- total_data %>%
+  group_by(month,year) %>%
+  summarise(average = mean(weight,na.rm = TRUE))
+```
+
+
+```{r, echo=FALSE, warning=FALSE}
+as.data.table(data2017)[, .(avg_weight = mean(weight, na.rm = TRUE)), by = month]
+as.data.table(data2018)[, .(avg_weight = mean(weight, na.rm = TRUE)), by = month]
+
+```
+
+
+It's possible to see that the annual average weight decreases from 3262.134 to 3261.649, whereas between the months there are relatively bigger differences (but not really relevant).
+
+
+
+
+
